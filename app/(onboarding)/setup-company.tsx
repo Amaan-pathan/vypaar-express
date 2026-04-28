@@ -46,46 +46,52 @@ export default function SetupCompanyScreen() {
 
     setLoading(true)
 
-    // 1. Insert into tenants
-    const { data: tenantData, error: tenantError } = await supabase
-      .from('tenants')
-      .insert({
+    try {
+      const tenantPayload = {
         company_name: data.companyName,
+        owner_name: data.ownerName,
         city: data.city,
         phone: data.phone || null,
         gst_number: data.gstNumber || null,
-      })
-      .select('id')
-      .single()
+      }
+      console.log("Submitting tenant insert payload:", tenantPayload)
 
-    if (tenantError) {
-      setLoading(false)
-      Alert.alert('Error creating company', tenantError.message)
-      return
-    }
+      // 1. Insert into tenants
+      const { data: tenantData, error: tenantError } = await supabase
+        .from('tenants')
+        .insert(tenantPayload)
+        .select('id')
+        .single()
 
-    const newTenantId = tenantData.id
+      if (tenantError) throw tenantError
 
-    // 2. Insert into users
-    const { error: userError } = await supabase
-      .from('users')
-      .insert({
+      const newTenantId = tenantData.id
+
+      const userPayload = {
         id: user.id,
         tenant_id: newTenantId,
+        email: user.email,
         full_name: data.ownerName,
         role: 'OWNER',
-      })
+        phone: null,
+      }
+      console.log("Submitting users insert payload:", userPayload)
 
-    setLoading(false)
+      // 2. Insert into users
+      const { error: userError } = await supabase
+        .from('users')
+        .insert(userPayload)
 
-    if (userError) {
-      Alert.alert('Error creating user profile', userError.message)
-      return
+      if (userError) throw userError
+
+      // Success
+      setTenantId(newTenantId)
+      router.push('/(tabs)')
+    } catch (error: any) {
+      Alert.alert('Error during setup', error.message)
+    } finally {
+      setLoading(false)
     }
-
-    // Success
-    setTenantId(newTenantId)
-    router.push('/(onboarding)/add-first-truck')
   }
 
   return (

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useRootNavigationState } from 'expo-router'
 import { Colors } from '../constants/Colors'
 import { Button } from '../components/ui/Button'
 import { Truck } from 'lucide-react-native'
@@ -8,10 +8,13 @@ import { useEffect } from 'react'
 
 export default function SplashScreen() {
   const router = useRouter()
+  const rootNavigationState = useRootNavigationState()
   const session = useStore((state) => state.session)
   const tenantId = useStore((state) => state.tenantId)
 
   useEffect(() => {
+    if (!rootNavigationState?.key) return
+
     if (session) {
       if (tenantId) {
         router.replace('/(tabs)')
@@ -19,7 +22,7 @@ export default function SplashScreen() {
         router.replace('/(onboarding)/setup-company')
       }
     }
-  }, [session, tenantId])
+  }, [session, tenantId, rootNavigationState?.key])
 
   // Don't flash the splash screen if we are already logged in
   if (session) {
